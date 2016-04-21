@@ -30,19 +30,20 @@ type Client interface {
 
 // NewClient returns a new Client instance which can be used to interact with
 // the Docker API.
-func NewClient(dockerHost string, tlsConfig *tls.Config, pullImages bool) Client {
+func NewClient(dockerHost string, tlsConfig *tls.Config, pullImages bool, auth *dockerclient.AuthConfig) Client {
 	docker, err := dockerclient.NewDockerClient(dockerHost, tlsConfig)
 
 	if err != nil {
 		log.Fatalf("Error instantiating Docker client: %s", err)
 	}
 
-	return dockerClient{api: docker, pullImages: pullImages}
+	return dockerClient{api: docker, pullImages: pullImages, auth: auth}
 }
 
 type dockerClient struct {
 	api        dockerclient.Client
 	pullImages bool
+	auth       *dockerclient.AuthConfig
 }
 
 func (client dockerClient) ListContainers(fn Filter) ([]Container, error) {
@@ -111,7 +112,7 @@ func (client dockerClient) StartContainer(c Container) error {
 
 	log.Infof("Starting %s", name)
 
-	newContainerID, err := client.api.CreateContainer(config, name)
+	newContainerID, err := client.api.CreateContainer(config, name, client.auth)
 	if err != nil {
 		return err
 	}
@@ -132,7 +133,7 @@ func (client dockerClient) IsContainerStale(c Container) (bool, error) {
 
 	if client.pullImages {
 		log.Debugf("Pulling %s for %s", imageName, c.Name())
-		if err := client.api.PullImage(imageName, nil); err != nil {
+		if err := client.api.PullImage(imageName, client.auth); err != nil {
 			return false, err
 		}
 	}
@@ -153,7 +154,7 @@ func (client dockerClient) IsContainerStale(c Container) (bool, error) {
 func (client dockerClient) RemoveImage(c Container) error {
 	imageID := c.ImageID()
 	log.Infof("Removing image %s", imageID)
-	_, err := client.api.RemoveImage(imageID)
+	_, err := client.api.RemoveImage(imageID, true)
 	return err
 }
 

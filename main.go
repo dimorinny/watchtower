@@ -1,4 +1,4 @@
-package main // import "github.com/CenturyLinkLabs/watchtower"
+package main // import "github.com/dimorinny/watchtower"
 
 import (
 	"crypto/tls"
@@ -12,10 +12,11 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/CenturyLinkLabs/watchtower/actions"
-	"github.com/CenturyLinkLabs/watchtower/container"
 	log "github.com/Sirupsen/logrus"
 	"github.com/codegangsta/cli"
+	"github.com/dimorinny/watchtower/actions"
+	"github.com/dimorinny/watchtower/container"
+	"github.com/samalba/dockerclient"
 )
 
 var (
@@ -110,7 +111,7 @@ func before(c *cli.Context) error {
 		return err
 	}
 
-	client = container.NewClient(c.GlobalString("host"), tls, !c.GlobalBool("no-pull"))
+	client = container.NewClient(c.GlobalString("host"), tls, !c.GlobalBool("no-pull"), &dockerclient.AuthConfig{})
 
 	handleSignals()
 	return nil

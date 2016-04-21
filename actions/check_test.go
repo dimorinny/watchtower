@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/CenturyLinkLabs/watchtower/container"
-	"github.com/CenturyLinkLabs/watchtower/container/mockclient"
+	"github.com/dimorinny/watchtower/container"
+	"github.com/dimorinny/watchtower/container/mockclient"
 	"github.com/samalba/dockerclient"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"

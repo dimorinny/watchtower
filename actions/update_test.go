@@ -4,7 +4,7 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/CenturyLinkLabs/watchtower/container"
+	"github.com/dimorinny/watchtower/container"
 	"github.com/samalba/dockerclient"
 	"github.com/stretchr/testify/assert"
 )

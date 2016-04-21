@@ -11,6 +11,10 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
+var (
+	auth = &dockerclient.AuthConfig{}
+)
+
 func allContainers(Container) bool { return true }
 func noContainers(Container) bool  { return false }
 
@@ -22,7 +26,7 @@ func TestListContainers_Success(t *testing.T) {
 	api.On("InspectContainer", "foo").Return(ci, nil)
 	api.On("InspectImage", "abc123").Return(ii, nil)
 
-	client := dockerClient{api: api}
+	client := dockerClient{api: api, pullImages: false, auth: auth}
 	cs, err := client.ListContainers(allContainers)
 
 	assert.NoError(t, err)
@@ -40,7 +44,7 @@ func TestListContainers_Filter(t *testing.T) {
 	api.On("InspectContainer", "foo").Return(ci, nil)
 	api.On("InspectImage", "abc123").Return(ii, nil)
 
-	client := dockerClient{api: api}
+	client := dockerClient{api: api, pullImages: false, auth: auth}
 	cs, err := client.ListContainers(noContainers)
 
 	assert.NoError(t, err)
@@ -52,7 +56,7 @@ func TestListContainers_ListError(t *testing.T) {
 	api := mockclient.NewMockClient()
 	api.On("ListContainers", false, false, "").Return([]dockerclient.Container{}, errors.New("oops"))
 
-	client := dockerClient{api: api}
+	client := dockerClient{api: api, pullImages: false, auth: auth}
 	_, err := client.ListContainers(allContainers)
 
 	assert.Error(t, err)
@@ -65,7 +69,7 @@ func TestListContainers_InspectContainerError(t *testing.T) {
 	api.On("ListContainers", false, false, "").Return([]dockerclient.Container{{Id: "foo", Names: []string{"bar"}}}, nil)
 	api.On("InspectContainer", "foo").Return(&dockerclient.ContainerInfo{}, errors.New("uh-oh"))
 
-	client := dockerClient{api: api}
+	client := dockerClient{api: api, pullImages: false, auth: auth}
 	_, err := client.ListContainers(allContainers)
 
 	assert.Error(t, err)
@@ -81,7 +85,7 @@ func TestListContainers_InspectImageError(t *testing.T) {
 	api.On("InspectContainer", "foo").Return(ci, nil)
 	api.On("InspectImage", "abc123").Return(ii, errors.New("whoops"))
 
-	client := dockerClient{api: api}
+	client := dockerClient{api: api, pullImages: false, auth: auth}
 	_, err := client.ListContainers(allContainers)
 
 	assert.Error(t, err)
@@ -110,7 +114,7 @@ func TestStopContainer_DefaultSuccess(t *testing.T) {
 	api.On("RemoveContainer", "abc123", true, false).Return(nil)
 	api.On("InspectContainer", "abc123").Return(&dockerclient.ContainerInfo{}, errors.New("Not Found"))
 
-	client := dockerClient{api: api}
+	client := dockerClient{api: api, pullImages: false, auth: auth}
 	err := client.StopContainer(c, time.Second)
 
 	assert.NoError(t, err)
@@ -139,7 +143,7 @@ func TestStopContainer_CustomSignalSuccess(t *testing.T) {
 	api.On("RemoveContainer", "abc123", true, false).Return(nil)
 	api.On("InspectContainer", "abc123").Return(&dockerclient.ContainerInfo{}, errors.New("Not Found"))
 
-	client := dockerClient{api: api}
+	client := dockerClient{api: api, pullImages: false, auth: auth}
 	err := client.StopContainer(c, time.Second)
 
 	assert.NoError(t, err)
@@ -158,7 +162,7 @@ func TestStopContainer_KillContainerError(t *testing.T) {
 	api := mockclient.NewMockClient()
 	api.On("KillContainer", "abc123", "SIGTERM").Return(errors.New("oops"))
 
-	client := dockerClient{api: api}
+	client := dockerClient{api: api, pullImages: false, auth: auth}
 	err := client.StopContainer(c, time.Second)
 
 	assert.Error(t, err)
@@ -180,7 +184,7 @@ func TestStopContainer_RemoveContainerError(t *testing.T) {
 	api.On("InspectContainer", "abc123").Return(&dockerclient.ContainerInfo{}, errors.New("dangit"))
 	api.On("RemoveContainer", "abc123", true, false).Return(errors.New("whoops"))
 
-	client := dockerClient{api: api}
+	client := dockerClient{api: api, pullImages: false, auth: auth}
 	err := client.StopContainer(c, time.Second)
 
 	assert.Error(t, err)
@@ -201,10 +205,10 @@ func TestStartContainer_Success(t *testing.T) {
 	}
 
 	api := mockclient.NewMockClient()
-	api.On("CreateContainer", mock.AnythingOfType("*dockerclient.ContainerConfig"), "foo").Return("def789", nil)
+	api.On("CreateContainer", mock.AnythingOfType("*dockerclient.ContainerConfig"), "foo", auth).Return("def789", nil)
 	api.On("StartContainer", "def789", mock.AnythingOfType("*dockerclient.HostConfig")).Return(nil)
 
-	client := dockerClient{api: api}
+	client := dockerClient{api: api, pullImages: false, auth: auth}
 	err := client.StartContainer(c)
 
 	assert.NoError(t, err)
@@ -224,9 +228,9 @@ func TestStartContainer_CreateContainerError(t *testing.T) {
 	}
 
 	api := mockclient.NewMockClient()
-	api.On("CreateContainer", mock.Anything, "foo").Return("", errors.New("oops"))
+	api.On("CreateContainer", mock.Anything, "foo", auth).Return("", errors.New("oops"))
 
-	client := dockerClient{api: api}
+	client := dockerClient{api: api, pullImages: false, auth: auth}
 	err := client.StartContainer(c)
 
 	assert.Error(t, err)
@@ -247,10 +251,10 @@ func TestStartContainer_StartContainerError(t *testing.T) {
 	}
 
 	api := mockclient.NewMockClient()
-	api.On("CreateContainer", mock.Anything, "foo").Return("def789", nil)
+	api.On("CreateContainer", mock.Anything, "foo", auth).Return("def789", nil)
 	api.On("StartContainer", "def789", mock.Anything).Return(errors.New("whoops"))
 
-	client := dockerClient{api: api}
+	client := dockerClient{api: api, pullImages: false, auth: auth}
 	err := client.StartContainer(c)
 
 	assert.Error(t, err)
@@ -268,7 +272,7 @@ func TestRenameContainer_Success(t *testing.T) {
 	api := mockclient.NewMockClient()
 	api.On("RenameContainer", "abc123", "foo").Return(nil)
 
-	client := dockerClient{api: api}
+	client := dockerClient{api: api, pullImages: false, auth: auth}
 	err := client.RenameContainer(c, "foo")
 
 	assert.NoError(t, err)
@@ -285,7 +289,7 @@ func TestRenameContainer_Error(t *testing.T) {
 	api := mockclient.NewMockClient()
 	api.On("RenameContainer", "abc123", "foo").Return(errors.New("oops"))
 
-	client := dockerClient{api: api}
+	client := dockerClient{api: api, pullImages: false, auth: auth}
 	err := client.RenameContainer(c, "foo")
 
 	assert.Error(t, err)
@@ -408,9 +412,9 @@ func TestRemoveImage_Success(t *testing.T) {
 	}
 
 	api := mockclient.NewMockClient()
-	api.On("RemoveImage", "abc123").Return([]*dockerclient.ImageDelete{}, nil)
+	api.On("RemoveImage", "abc123", true).Return([]*dockerclient.ImageDelete{}, nil)
 
-	client := dockerClient{api: api}
+	client := dockerClient{api: api, pullImages: false, auth: auth}
 	err := client.RemoveImage(c)
 
 	assert.NoError(t, err)
@@ -425,9 +429,9 @@ func TestRemoveImage_Error(t *testing.T) {
 	}
 
 	api := mockclient.NewMockClient()
-	api.On("RemoveImage", "abc123").Return([]*dockerclient.ImageDelete{}, errors.New("oops"))
+	api.On("RemoveImage", "abc123", true).Return([]*dockerclient.ImageDelete{}, errors.New("oops"))
 
-	client := dockerClient{api: api}
+	client := dockerClient{api: api, pullImages: false, auth: auth}
 	err := client.RemoveImage(c)
 
 	assert.Error(t, err)
