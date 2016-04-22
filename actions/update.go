@@ -13,10 +13,6 @@ var (
 	waitTime = 10 * time.Second
 )
 
-func allContainersFilter(container.Container) bool { return true }
-
-func watchtowerContainersFilter(c container.Container) bool { return !c.IsWatchtower() }
-
 func containerFilter(names []string) container.Filter {
 	if len(names) == 0 {
 		return watchtowerContainersFilter

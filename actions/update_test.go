@@ -27,12 +27,6 @@ func TestContainerFilter_NoMatch(t *testing.T) {
 	assert.False(t, f(c))
 }
 
-func TestContainerFilter_NoFilters(t *testing.T) {
-	c := newTestContainer("/bar", []string{})
-	f := containerFilter([]string{})
-	assert.True(t, f(c))
-}
-
 func TestCheckDependencies(t *testing.T) {
 	cs := []container.Container{
 		newTestContainer("1", []string{}),
