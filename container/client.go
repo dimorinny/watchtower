@@ -69,10 +69,10 @@ func (client dockerClient) ListContainers(fn Filter) ([]Container, error) {
 
 		c := Container{containerInfo: containerInfo, imageInfo: imageInfo}
 		if fn(c) {
+			fmt.Println(imageInfo)
 			cs = append(cs, c)
 		}
 	}
-
 	return cs, nil
 }
 
@@ -146,6 +146,8 @@ func (client dockerClient) IsContainerStale(c Container) (bool, error) {
 	if newImageInfo.Id != oldImageInfo.Id {
 		log.Infof("Found new %s image (%s)", imageName, newImageInfo.Id)
 		return true, nil
+	} else {
+		log.Infof("Image %s not updated (%s)", imageName, newImageInfo.Id)
 	}
 
 	return false, nil

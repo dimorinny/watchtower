@@ -1,5 +1,5 @@
 FROM centurylink/ca-certs
-MAINTAINER CenturyLink Labs <innovationslab@ctl.io>
+MAINTAINER Dmitry Merkurev <didika914@gmail.com>
 LABEL "com.centurylinklabs.watchtower"="true"
 
 COPY watchtower /
