@@ -51,7 +51,7 @@ func (client dockerClient) ListContainers(fn Filter) ([]Container, error) {
 
 	log.Debug("Retrieving running containers")
 
-	runningContainers, err := client.api.ListContainers(false, false, "")
+	runningContainers, err := client.api.ListContainers(true, false, "")
 	if err != nil {
 		return nil, err
 	}

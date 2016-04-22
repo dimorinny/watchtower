@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -20,10 +21,14 @@ import (
 )
 
 var (
-	wg           sync.WaitGroup
-	client       container.Client
-	pollInterval time.Duration
-	cleanup      bool
+	wg               sync.WaitGroup
+	client           container.Client
+	pollInterval     time.Duration
+	cleanup          bool
+	interval         int
+	login            string
+	password         string
+	exceptContainers []string
 )
 
 func init() {
@@ -37,6 +42,20 @@ func main() {
 		rootCertPath = os.Getenv("DOCKER_CERT_PATH")
 	}
 
+	login = os.Getenv("AUTH_LOGIN")
+	password = os.Getenv("AUTH_PASSWORD")
+	if value, err := strconv.Atoi(os.Getenv("INTERVAL")); err == nil {
+		interval = value
+	} else {
+		interval = 200
+	}
+	exceptContainers = strings.Split(os.Getenv("EXCEPT_CONTAINERS"), ",")
+
+	log.Infof("Login = %s", login)
+	log.Infof("Password = %s", password)
+	log.Infof("Interval = %d", interval)
+	log.Infof("Except containers = %s", exceptContainers)
+
 	app := cli.NewApp()
 	app.Name = "watchtower"
 	app.Usage = "Automatically update running Docker containers"
@@ -48,11 +67,6 @@ func main() {
 			Usage:  "daemon socket to connect to",
 			Value:  "unix:///var/run/docker.sock",
 			EnvVar: "DOCKER_HOST",
-		},
-		cli.IntFlag{
-			Name:  "interval, i",
-			Usage: "poll interval (in seconds)",
-			Value: 300,
 		},
 		cli.BoolFlag{
 			Name:  "no-pull",
@@ -102,7 +116,7 @@ func before(c *cli.Context) error {
 		log.SetLevel(log.DebugLevel)
 	}
 
-	pollInterval = time.Duration(c.Int("interval")) * time.Second
+	pollInterval = time.Duration(interval) * time.Second
 	cleanup = c.GlobalBool("cleanup")
 
 	// Set-up container client
@@ -111,22 +125,26 @@ func before(c *cli.Context) error {
 		return err
 	}
 
-	client = container.NewClient(c.GlobalString("host"), tls, !c.GlobalBool("no-pull"), &dockerclient.AuthConfig{})
+	var config *dockerclient.AuthConfig
+	if login != "" && password != "" {
+		config = &dockerclient.AuthConfig{Username: login, Password: password}
+	} else {
+		config = &dockerclient.AuthConfig{}
+	}
+	client = container.NewClient(c.GlobalString("host"), tls, !c.GlobalBool("no-pull"), config)
 
 	handleSignals()
 	return nil
 }
 
 func start(c *cli.Context) {
-	names := c.Args()
-
 	if err := actions.CheckPrereqs(client, cleanup); err != nil {
 		log.Fatal(err)
 	}
 
 	for {
 		wg.Add(1)
-		if err := actions.Update(client, names, cleanup); err != nil {
+		if err := actions.Update(client, exceptContainers, cleanup); err != nil {
 			fmt.Println(err)
 		}
 		wg.Done()

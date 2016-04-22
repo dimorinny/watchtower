@@ -20,11 +20,11 @@ func containerFilter(names []string) container.Filter {
 
 	return func(c container.Container) bool {
 		for _, name := range names {
-			if (name == c.Name()) || (name == c.Name()[1:]) {
-				return true
+			if (name == c.Name()) || (name == c.Name()[1:] || c.IsWatchtower()) {
+				return false
 			}
 		}
-		return false
+		return true
 	}
 }
 
