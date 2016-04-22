@@ -69,7 +69,6 @@ func (client dockerClient) ListContainers(fn Filter) ([]Container, error) {
 
 		c := Container{containerInfo: containerInfo, imageInfo: imageInfo}
 		if fn(c) {
-			fmt.Println(imageInfo)
 			cs = append(cs, c)
 		}
 	}

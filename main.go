@@ -52,7 +52,7 @@ func main() {
 		cli.IntFlag{
 			Name:  "interval, i",
 			Usage: "poll interval (in seconds)",
-			Value: 10,
+			Value: 300,
 		},
 		cli.BoolFlag{
 			Name:  "no-pull",

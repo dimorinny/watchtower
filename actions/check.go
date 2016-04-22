@@ -7,6 +7,7 @@ import (
 )
 
 func withoutWatchtowerContainersFilter(c container.Container) bool { return c.IsWatchtower() }
+func watchtowerContainersFilter(c container.Container) bool        { return !c.IsWatchtower() }
 
 // CheckPrereqs will ensure that there are not multiple instances of the
 // watchtower running simultaneously. If multiple watchtower containers are
