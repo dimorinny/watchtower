@@ -3,6 +3,7 @@ package container
 import (
 	"crypto/tls"
 	"fmt"
+	"strings"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
@@ -26,6 +27,7 @@ type Client interface {
 	RenameContainer(Container, string) error
 	IsContainerStale(Container) (bool, error)
 	RemoveImage(Container) error
+	ClearIds()
 }
 
 // NewClient returns a new Client instance which can be used to interact with
@@ -37,13 +39,15 @@ func NewClient(dockerHost string, tlsConfig *tls.Config, pullImages bool, auth *
 		log.Fatalf("Error instantiating Docker client: %s", err)
 	}
 
-	return dockerClient{api: docker, pullImages: pullImages, auth: auth}
+	return &dockerClient{api: docker, pullImages: pullImages, auth: auth, ids: make(map[string]string)}
 }
 
 type dockerClient struct {
 	api        dockerclient.Client
 	pullImages bool
 	auth       *dockerclient.AuthConfig
+
+	ids map[string]string
 }
 
 func (client dockerClient) ListContainers(fn Filter) ([]Container, error) {
@@ -104,7 +108,11 @@ func (client dockerClient) StopContainer(c Container, timeout time.Duration) err
 	return nil
 }
 
-func (client dockerClient) StartContainer(c Container) error {
+func (client *dockerClient) ClearIds() {
+	client.ids = make(map[string]string)
+}
+
+func (client *dockerClient) StartContainer(c Container) error {
 	config := c.runtimeConfig()
 	hostConfig := c.hostConfig()
 	name := c.Name()
@@ -116,7 +124,19 @@ func (client dockerClient) StartContainer(c Container) error {
 		return err
 	}
 
+	client.ids[c.ID()] = newContainerID
 	log.Debugf("Starting container %s (%s)", name, newContainerID)
+
+	// Change volumes of restarted containers
+	for i, volume := range hostConfig.VolumesFrom {
+		volumeSplitted := strings.Split(volume, ":")
+		volumeId := volumeSplitted[0]
+		volumeOption := volumeSplitted[1]
+
+		if val, ok := client.ids[volumeId]; ok {
+			hostConfig.VolumesFrom[i] = val + ":" + volumeOption
+		}
+	}
 
 	return client.api.StartContainer(newContainerID, hostConfig)
 }

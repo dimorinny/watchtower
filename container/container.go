@@ -78,6 +78,31 @@ func (c Container) Links() []string {
 	return links
 }
 
+func (c Container) Deps() []string {
+	var ids []string
+
+	if (c.containerInfo != nil) && (c.containerInfo.HostConfig != nil) {
+		for _, dep := range c.containerInfo.HostConfig.VolumesFrom {
+			name := strings.Split(dep, ":")[0]
+			ids = append(ids, name)
+		}
+	}
+
+	return ids
+}
+
+func (c Container) IsDepensOn(container Container) bool {
+	for _, dep := range c.Deps() {
+		fmt.Println(dep)
+		fmt.Println(container.ID())
+		if dep == container.ID() {
+			return true
+		}
+	}
+
+	return false
+}
+
 // IsWatchtower returns a boolean flag indicating whether or not the current
 // container is the watchtower container itself. The watchtower container is
 // identified by the presence of the "com.centurylinklabs.watchtower" label in

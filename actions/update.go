@@ -73,17 +73,6 @@ func Update(client container.Client, names []string, cleanup bool) error {
 	// Restart stale containers in sorted order
 	for _, container := range containers {
 		if container.Stale {
-			// Since we can't shutdown a watchtower container immediately, we need to
-			// start the new one while the old one is still running. This prevents us
-			// from re-using the same container name so we first rename the current
-			// instance so that the new one can adopt the old name.
-			if container.IsWatchtower() {
-				if err := client.RenameContainer(container, randName()); err != nil {
-					log.Error(err)
-					continue
-				}
-			}
-
 			if err := client.StartContainer(container); err != nil {
 				log.Error(err)
 			}
@@ -94,27 +83,63 @@ func Update(client container.Client, names []string, cleanup bool) error {
 		}
 	}
 
+	client.ClearIds()
+
 	return nil
 }
 
 func checkDependencies(containers []container.Container) {
-
-	for i, parent := range containers {
+	for _, parent := range containers {
 		if parent.Stale {
-			continue
-		}
-
-	LinkLoop:
-		for _, linkName := range parent.Links() {
-			for _, child := range containers {
-				if child.Name() == linkName && child.Stale {
+			for i, container := range containers {
+				if container.IsDepensOn(parent) {
 					containers[i].Stale = true
-					break LinkLoop
 				}
 			}
 		}
 	}
 }
+
+// func checkDependencies(containers []container.Container) {
+
+// 	for i, parent := range containers {
+// 		if parent.Stale {
+// 			continue
+// 		}
+
+// 	LinkLoop:
+// 		for _, linkName := range parent.Deps() {
+// 			fmt.Println
+// 			for _, child := range containers {
+// 				fmt.Println(child.ID())
+// 				fmt.Println(linkName)
+// 				if child.ID() == linkName && child.Stale {
+// 					containers[i].Stale = true
+// 					break LinkLoop
+// 				}
+// 			}
+// 		}
+// 	}
+// }
+
+// func checkDependencies(containers []container.Container) {
+
+// 	for i, parent := range containers {
+// 		if parent.Stale {
+// 			continue
+// 		}
+
+// 	LinkLoop:
+// 		for _, linkName := range parent.Links() {
+// 			for _, child := range containers {
+// 				if child.Name() == linkName && child.Stale {
+// 					containers[i].Stale = true
+// 					break LinkLoop
+// 				}
+// 			}
+// 		}
+// 	}
+// }
 
 // Generates a random, 32-character, Docker-compatible container name.
 func randName() string {

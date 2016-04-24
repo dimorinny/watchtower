@@ -59,16 +59,16 @@ func (ds *dependencySorter) Sort(containers []Container) ([]Container, error) {
 
 func (ds *dependencySorter) visit(c Container) error {
 
-	if _, ok := ds.marked[c.Name()]; ok {
+	if _, ok := ds.marked[c.ID()]; ok {
 		return fmt.Errorf("Circular reference to %s", c.Name())
 	}
 
 	// Mark any visited node so that circular references can be detected
-	ds.marked[c.Name()] = true
-	defer delete(ds.marked, c.Name())
+	ds.marked[c.ID()] = true
+	defer delete(ds.marked, c.ID())
 
 	// Recursively visit links
-	for _, linkName := range c.Links() {
+	for _, linkName := range c.Deps() {
 		if linkedContainer := ds.findUnvisited(linkName); linkedContainer != nil {
 			if err := ds.visit(*linkedContainer); err != nil {
 				return err
@@ -85,7 +85,7 @@ func (ds *dependencySorter) visit(c Container) error {
 
 func (ds *dependencySorter) findUnvisited(name string) *Container {
 	for _, c := range ds.unvisited {
-		if c.Name() == name {
+		if c.ID() == name {
 			return &c
 		}
 	}
@@ -96,7 +96,7 @@ func (ds *dependencySorter) findUnvisited(name string) *Container {
 func (ds *dependencySorter) removeUnvisited(c Container) {
 	var idx int
 	for i := range ds.unvisited {
-		if ds.unvisited[i].Name() == c.Name() {
+		if ds.unvisited[i].ID() == c.ID() {
 			idx = i
 			break
 		}
