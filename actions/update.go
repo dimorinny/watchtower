@@ -100,47 +100,6 @@ func checkDependencies(containers []container.Container) {
 	}
 }
 
-// func checkDependencies(containers []container.Container) {
-
-// 	for i, parent := range containers {
-// 		if parent.Stale {
-// 			continue
-// 		}
-
-// 	LinkLoop:
-// 		for _, linkName := range parent.Deps() {
-// 			fmt.Println
-// 			for _, child := range containers {
-// 				fmt.Println(child.ID())
-// 				fmt.Println(linkName)
-// 				if child.ID() == linkName && child.Stale {
-// 					containers[i].Stale = true
-// 					break LinkLoop
-// 				}
-// 			}
-// 		}
-// 	}
-// }
-
-// func checkDependencies(containers []container.Container) {
-
-// 	for i, parent := range containers {
-// 		if parent.Stale {
-// 			continue
-// 		}
-
-// 	LinkLoop:
-// 		for _, linkName := range parent.Links() {
-// 			for _, child := range containers {
-// 				if child.Name() == linkName && child.Stale {
-// 					containers[i].Stale = true
-// 					break LinkLoop
-// 				}
-// 			}
-// 		}
-// 	}
-// }
-
 // Generates a random, 32-character, Docker-compatible container name.
 func randName() string {
 	b := make([]rune, 32)

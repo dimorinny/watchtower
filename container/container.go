@@ -93,8 +93,6 @@ func (c Container) Deps() []string {
 
 func (c Container) IsDepensOn(container Container) bool {
 	for _, dep := range c.Deps() {
-		fmt.Println(dep)
-		fmt.Println(container.ID())
 		if dep == container.ID() {
 			return true
 		}
